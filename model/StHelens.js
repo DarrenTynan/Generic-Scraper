@@ -15,8 +15,6 @@ const StHelensSchema = new mongoose.Schema({
     vehicletype: String,
     bodystyle: String,
     modelcode: String,
-    bodystyle: String,
-    modelcode: String,
     msrp: Number,
     name: String,
     cpo: String,
