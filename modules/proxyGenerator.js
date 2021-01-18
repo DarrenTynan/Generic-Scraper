@@ -9,7 +9,8 @@ function proxyGenerator() {
     let port = [];
     let proxy;
 
-    request("https://sslproxies.org/", function (error, response, html) {
+    request("https://sslproxies.org/", function (error, response, html)
+    {
         if (! error && response.statusCode == 200) {
             const $ = cheerio.load(html);
 
@@ -20,22 +21,27 @@ function proxyGenerator() {
             $("td:nth-child(2)").each(function (index, value) {
                 port[index] = $(this).text();
             });
-        } else {
+        }
+        else
+        {
             console.log("Error loading proxy, please try again");
-        } ip.join(", ");
+        } 
+        
+        ip.join(", ");
         port.join(", ");
 
-        // console.log("IP Addresses:", ip_addresses);
-        // console.log("Port Numbers:", port_numbers);
+        // console.log("IP Addresses:", ip);
+        // console.log("Port Numbers:", port);
 
         // Generate random int between 1 and 100.
         let randomNumber = Math.floor(Math.random() * 100);
 
-        // console.log(ip_addresses[randomNumber]);
-        // console.log(port_numbers[randomNumber]);
+        // console.log(ip[randomNumber]);
+        // console.log(port[randomNumber]);
 
-        let proxy = 'http://${ip_addresses[random_number]}:${port_numbers[random_number]}';
-        // console.log(proxy);
+        let proxy = `http://${ip[randomNumber]}:${port[randomNumber]}`;
+
+        console.log("Proxy: " + proxy);
 
     });
 }

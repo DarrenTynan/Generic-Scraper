@@ -6,24 +6,30 @@ const StHelens = require('./model/StHelens');
 const { collection } = require('./model/StHelens');
 
 const url = "https://www.sthelenschryslerdodgejeepram.com/cars-for-sale-warren-or.html";
+const url1 = "https://books.toscrape.com/index.html";
+const url2 = "https://sfbay.craigslist.org/";
 
 /**
  * Connect to mongoDB
  */
 async function connectToMongoDB()
 {
-    await mongoose.connect("mongodb://127.0.0.1:27017/sthelens", { useNewUrlParser: true });
+    await mongoose.connect("mongodb://127.0.0.1:27017/sthelens", { useNewUrlParser: true, useUnifiedTopology: true });
     console.log("Connected to mongo");
 }
 
-
+/**
+ * Scrape vehicle listing from parent page.
+ */
 async function scrapeVehicleListings()
 {
-    axios.get(url, { proxy: proxyGenerator() })
+    console.log('Scraping vehicle listings...');
+    // axios.get(url, { proxy: proxyGenerator() })
+    await axios.get(url)
     .then( (response) =>
     {
         // handle success
-        // console.log(response);
+        console.log(response);
         if(response.status === 200)
         {
             const $ = cheerio.load(response.data);
@@ -34,6 +40,12 @@ async function scrapeVehicleListings()
                 console.log($(element).data().name);
             });
 
+            // test($);
+
+        }
+        else
+        {
+            console.log("Response error: " + response.status);
         }
     })
     .catch( (error) =>
@@ -41,6 +53,16 @@ async function scrapeVehicleListings()
         // Handle error.
         console.log("Error scraping site: " + error);
     });
+}
+
+function test($)
+{
+        // Iterate over car section on page and log data elements.
+        $('.row.srpVehicle.hasVehicleInfo').each((index, element) =>
+        {
+            console.log($(element).data().name);
+        });
+
 }
 
 //////////////////////////////////////////
@@ -57,11 +79,11 @@ async function axiosTest()
     }
 }
 
-function scrapeVehicleDetails(response)
+function scrapeVehicleDetails(responseData)
 {
-    const $ = cheerio.load(response);
+    const $ = cheerio.load(responseData);
 
-    console.log("length: " + response.length);
+    console.log("length: " + responseData.length);
 
     // const details = $('.row.srpVehicle.hasVehicleInfo').map( (index, element) =>
     // {
@@ -102,13 +124,17 @@ async function main()
 {
     // Call to connect to database.
     // await connectToMongoDB();
-    // await scrapeVehicleListings();
+
+    // Scrape the parent page.
+    await scrapeVehicleListings();
+
+    // Create a new MongoDB collection.
     // const collection = new StHelens();
 
-    const response = await axiosTest();
+    // const response = await axiosTest();
     // console.log(response);
 
-    // scrapeVehicleDetails(response);
+    // scrapeVehicleDetails(responseData);
 
     // This will also exit after 1 seconds, and print its (killed) PID
     setTimeout(( () => { return process.kill(process.pid); }), 1000);
