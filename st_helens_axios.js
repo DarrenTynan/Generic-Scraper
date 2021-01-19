@@ -3,33 +3,35 @@ const cheerio = require('cheerio');
 const proxyGenerator = require("./modules/proxyGenerator");
 const mongoose = require('mongoose');
 const StHelens = require('./model/StHelens');
-const { collection } = require('./model/StHelens');
 
-const url = "https://www.sthelenschryslerdodgejeepram.com/cars-for-sale-warren-or.html";
-const url1 = "https://books.toscrape.com/index.html";
-const url2 = "https://sfbay.craigslist.org/";
+const targetURL = "https://www.sthelenschryslerdodgejeepram.com/cars-for-sale-warren-or.html";
 
 /**
  * Connect to mongoDB
+ * 
+ * @returns {db} database pointer
  */
-async function connectToMongoDB()
+function connectToMongoDB()
 {
-    await mongoose.connect("mongodb://127.0.0.1:27017/sthelens", { useNewUrlParser: true, useUnifiedTopology: true });
-    console.log("Connected to mongo");
+    mongoose.connect("mongodb://127.0.0.1:27017/sthelens", { useNewUrlParser: true, useUnifiedTopology: true });
+    let db = mongoose.connection;
+    db.once('open', () => { console.log("Connected to mongoDB") });
+    return db;
 }
+
 
 /**
  * Scrape vehicle listing from parent page.
+ * 
+ * @param  {mongoDB} database
  */
-async function scrapeVehicleListings()
+async function scrapeVehicleListings(database)
 {
     console.log('Scraping vehicle listings...');
-    // axios.get(url, { proxy: proxyGenerator() })
-    await axios.get(url)
+    await axios.get(targetURL, { proxy: proxyGenerator() })
     .then( (response) =>
     {
-        // handle success
-        console.log(response);
+        // console.log(response);
         if(response.status === 200)
         {
             const $ = cheerio.load(response.data);
@@ -37,10 +39,11 @@ async function scrapeVehicleListings()
             // Iterate over car section on page and log data elements.
             $('.row.srpVehicle.hasVehicleInfo').each((index, element) =>
             {
-                console.log($(element).data().name);
+                let newCollection = new StHelens();
+                scrapeVehicleDetails($, newCollection);
+                
+                database.collection('vehicle').insertOne(newCollection);  
             });
-
-            // test($);
 
         }
         else
@@ -55,67 +58,42 @@ async function scrapeVehicleListings()
     });
 }
 
-function test($)
-{
-        // Iterate over car section on page and log data elements.
-        $('.row.srpVehicle.hasVehicleInfo').each((index, element) =>
-        {
-            console.log($(element).data().name);
-        });
 
-}
-
-//////////////////////////////////////////
-async function axiosTest()
+/**
+ * Scrape the vehicle details from parent page.
+ * 
+ * @param  {cheerio} $
+ * @param  {model} collection
+ */
+function scrapeVehicleDetails($, collection)
 {
-    try
+    $('.row.srpVehicle.hasVehicleInfo').map( (index, element) =>
     {
-        const { data:response } = await axios.get(url, { proxy: proxyGenerator() })
-        return response;
-    }
-    catch (error)
-    {
-        console.log("Error scraping site: " + error);
-    }
-}
-
-function scrapeVehicleDetails(responseData)
-{
-    const $ = cheerio.load(responseData);
-
-    console.log("length: " + responseData.length);
-
-    // const details = $('.row.srpVehicle.hasVehicleInfo').map( (index, element) =>
-    // {
-    //     const vin = $(element).data().vin;
-    //     const make = $(element).data().make;
-    //     const model = $(element).data().model;
-    //     const year = $(element).data().year;
-    //     const trim = $(element).data().trim;
-    //     const extcolor = $(element).data().extcolor;
-    //     const intcolor = $(element).data().intcolor;
-    //     const trans = $(element).data().trans;
-    //     const price = $(element).data().price;
-    //     const vehicleid = $(element).data().vehicleid;
-    //     const engine = $(element).data().engine;
-    //     const fueltype = $(element).data().fueltype;
-    //     const vehicletype = $(element).data().vehicletype;
-    //     const bodystyle = $(element).data().bodystyle;
-    //     const modelcode = $(element).data().modelcode;
-    //     const msrp = $(element).data().msrp;
-    //     const name = $(element).data().name;
-    //     const cpo = $(element).data().cpo;
-    //     const stocknum = $(element).data().stocknum;
-    //     const mpgcity = $(element).data().mpgcity;
-    //     const mpghwy = $(element).data().mpghwy;
-    
-    //     return { vin, make, model, year, trim, extcolor, intcolor, trans, price, vehicleid, engine, fueltype, vehicletype, bodystyle, modelcode, msrp, name, cpo, stocknum, mpgcity, mpghwy };
-    // });
-    
-    // return details;
+        collection.vin = $(element).data().vin;
+        collection.make = $(element).data().make;
+        collection.model = $(element).data().model;
+        collection.year = $(element).data().year;
+        collection.trim = $(element).data().trim;
+        collection.extcolor = $(element).data().extcolor;
+        collection.intcolor = $(element).data().intcolor;
+        collection.trans = $(element).data().trans;
+        collection.price = $(element).data().price;
+        collection.vehicleid = $(element).data().vehicleid;
+        collection.engine = $(element).data().engine;
+        collection.fueltype = $(element).data().fueltype;
+        collection.vehicletype = $(element).data().vehicletype;
+        collection.bodystyle = $(element).data().bodystyle;
+        collection.modelcode = $(element).data().modelcode;
+        collection.msrp = $(element).data().msrp;
+        collection.name = $(element).data().name;
+        collection.cpo = $(element).data().cpo;
+        collection.stocknum = $(element).data().stocknum;
+        collection.mpgcity = $(element).data().mpgcity;
+        collection.mpghwy = $(element).data().mpghwy;
+    });
     
 }
-//////////////////////////////////////////
+
 
 /**
  * Initialisation
@@ -123,18 +101,10 @@ function scrapeVehicleDetails(responseData)
 async function main()
 {
     // Call to connect to database.
-    // await connectToMongoDB();
+    let database = connectToMongoDB();
 
     // Scrape the parent page.
-    await scrapeVehicleListings();
-
-    // Create a new MongoDB collection.
-    // const collection = new StHelens();
-
-    // const response = await axiosTest();
-    // console.log(response);
-
-    // scrapeVehicleDetails(responseData);
+    // await scrapeVehicleListings(database);
 
     // This will also exit after 1 seconds, and print its (killed) PID
     setTimeout(( () => { return process.kill(process.pid); }), 1000);
